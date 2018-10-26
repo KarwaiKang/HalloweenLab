@@ -28,7 +28,7 @@ public class JackOLantern {
 
     public String toString() {
         String out = "";
-        for (int i = 0; i < faceFeatures.length; i++) {
+        for (int i = faceFeatures.length-1; i >= 0; i--) {
             for (int j = 0; j < faceFeatures[i].length; j++)
                 out += faceFeatures[i][j];
             out += "\n";

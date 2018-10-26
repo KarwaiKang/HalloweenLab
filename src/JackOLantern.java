@@ -11,22 +11,19 @@ public class JackOLantern {
 
     public void fill(String str) {
         for (int i = 0; i < faceFeatures.length; i++) {
-            for (int j = 0; j < faceFeatures[i].length; j++) {
-                faceFeatures[i][j] = str;
-            }
+            for (int j = 0; j < faceFeatures[i].length; j++)
+                edit(str, i, j);
         }
     }
 
     public void fillRow(String str, int row) {
-        for (int j = 0; j < faceFeatures[row].length; j++) {
-            faceFeatures[row][j] = str;
-        }
+        for (int j = 0; j < faceFeatures[row].length; j++)
+            edit(str, row, j);
     }
 
     public void fillColumn(String str, int column) {
-        for (int i = 0; i < faceFeatures.length; i++) {
-            faceFeatures[i][column] = str;
-        }
+        for (int i = 0; i < faceFeatures.length; i++)
+            edit(str, i, column);
     }
 
     public String toString() {

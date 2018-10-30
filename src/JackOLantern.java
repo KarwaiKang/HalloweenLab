@@ -16,6 +16,11 @@ public class JackOLantern {
         }
     }
 
+    public void fillRow(String str, int row) {
+        for (int i = 0; i < faceFeatures[0].length; i++)
+            edit(str, row, i);
+    }
+
     public void fillColumn(String str, int column) {
         for (int i = 0; i < faceFeatures.length; i++)
             edit(str, i, column);
@@ -56,7 +61,7 @@ public class JackOLantern {
 
             // Evaluates the expression by first dealing with parenthesis.
 
-            while (!instance.matches("-?\\d*\\.?\\d+")) {
+            while (!instance.matches("-?\\d*\\.?\\d+") || instance.equals("NaN")) {
                 while (instance.contains("(")) {
                     int begIdx = instance.lastIndexOf("(");
                     int endIdx = begIdx + instance.substring(begIdx).indexOf(")");
@@ -86,7 +91,7 @@ public class JackOLantern {
     private String interpretExpression(String expr) {
         System.out.println("| In: " + expr);
 
-        while (!expr.matches("-?\\d*\\.?\\d+")) {
+        while (!expr.matches("-?\\d*\\.?\\d+|(NaN)]")) {
             while (expr.contains("^"))
                 expr = doOperation(expr, expr.indexOf("^"));
 

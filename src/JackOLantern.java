@@ -27,10 +27,10 @@ public class JackOLantern {
     }
 
     public void graphFunction(String str, String fn) {
-        graphFunction(str, fn, new int[]{0, faceFeatures[0].length});
+        graphFunction(str, fn, 0, faceFeatures[0].length);
     }
 
-    public void graphFunction(String str, String fn, int[] domain) {
+    public void graphFunction(String str, String fn, int min, int max) {
         // Remove whitespace
 
         String[] terms = fn.split(" ");
@@ -46,7 +46,9 @@ public class JackOLantern {
         fn = fn.substring(2);
 
         for (int i = 0; i < values; i++) {
-            if (!(i >= domain[0] && i <= domain[1]))
+            // Check if i is in specified domain
+
+            if (!(i >= min && i <= max))
                 continue;
 
             String instance = fn;
@@ -65,12 +67,11 @@ public class JackOLantern {
                 int begIdx = instance.lastIndexOf("(");
                 int endIdx = begIdx + instance.substring(begIdx).indexOf(")");
                 String innerFn = instance.substring(begIdx + 1, endIdx);
-                String evaluated = interpretExpression(innerFn);
-                instance = instance.substring(0, begIdx) + evaluated + instance.substring(endIdx + 1);
-                if (evaluated.contains("NaN"))
+                instance = instance.substring(0, begIdx) + evaluateExpression(innerFn) + instance.substring(endIdx + 1);
+                if (instance.contains("NaN"))
                     break;
             }
-            instance = interpretExpression(instance);
+            instance = evaluateExpression(instance);
 
             // Skip NaN
 
@@ -92,36 +93,38 @@ public class JackOLantern {
         }
     }
 
-    private String interpretExpression(String expr) {
+    private String evaluateExpression(String expr) {
         while (expr.contains("^"))
             expr = doOperation(expr, expr.indexOf("^"));
+
+        // Catch NaNs from negatives under the radical
 
         if (expr.contains("NaN"))
             return "NaN";
 
         while (expr.contains("*") || expr.contains("/")) {
+            int mulIdx = expr.indexOf("*");
+            int divIdx = expr.indexOf("/");
             int i;
-            if (!expr.contains("*")) {
-                i = expr.indexOf("/");
-            } else if (!expr.contains("/")) {
-                i = expr.indexOf("*");
-            } else
+            if (mulIdx < 0)
+                i = divIdx;
+            else if (divIdx < 0)
+                i = mulIdx;
+            else
                 i = Math.min(expr.indexOf("*"),expr.indexOf("/"));
             expr = doOperation(expr, i);
         }
 
-        while (expr.contains("+") || expr.matches(".*\\d-.*")) {
+        while (expr.matches(".*(\\+|\\d-).*")) {
+            int plusIdx = expr.indexOf("+");
+            int minusIdx = expr.indexOf("-");
             int i;
-            if (!expr.contains("+")) {
-                i = expr.indexOf("-");
-            } else if (!expr.contains("-")) {
-                i = expr.indexOf("+");
-            } else {
+            if (plusIdx < 0)
+                i = minusIdx;
+            else if (minusIdx < 1 || !expr.substring(minusIdx - 1, minusIdx).matches("\\d"))
+                i = plusIdx;
+            else
                 i = Math.min(expr.indexOf("+"), expr.indexOf("-"));
-                if (expr.indexOf("-") == 0 || !expr.substring(expr.indexOf("-") - 1, expr.indexOf("-")).matches("\\d")) {
-                    i = expr.indexOf("+");
-                }
-            }
             expr = doOperation(expr, i);
         }
 
@@ -131,68 +134,74 @@ public class JackOLantern {
         return expr;
     }
 
-    private String doOperation(String fn, int i) {
+    private String doOperation(String expr, int i) {
         int begIdx, endIdx;
+
+        // Get doubles beside operator
+
         for (begIdx = i; begIdx != 0; begIdx--) {
-            String nxtChar = fn.substring(begIdx - 1, begIdx);
+            String nxtChar = expr.substring(begIdx - 1, begIdx);
             if (nxtChar.matches("[\\d.]"))
                 continue;
             if (nxtChar.equals("-"))
                 begIdx--;
             break;
         }
-        for (endIdx = i; endIdx != fn.length() - 1 && (fn.substring(endIdx + 1, endIdx + 2).matches("[\\d.]") ||
-                (fn.substring(endIdx + 1, endIdx + 2).equals("-") && endIdx == i)); endIdx++) {}
-        String str1 = fn.substring(begIdx, i);
-        double num1;
+        for (endIdx = i; endIdx != expr.length() - 1 && (expr.substring(endIdx + 1, endIdx + 2).matches("[\\d.]") ||
+                (expr.substring(endIdx + 1, endIdx + 2).equals("-") && endIdx == i)); endIdx++) {}
+        double a, b;
         try {
-            num1 = Double.parseDouble(str1);
+            a = Double.parseDouble(expr.substring(begIdx, i));
         } catch (NumberFormatException e) {
-           num1 = 0;
+           a = 0;
         }
 
-        String str2 = fn.substring(i + 1, endIdx + 1);
-        double num2;
         try {
-            num2 = Double.parseDouble(str2);
+            b = Double.parseDouble(expr.substring(i + 1, endIdx + 1));
         } catch (NumberFormatException e) {
-            num2 = 0;
+            b = 0;
         }
+
+        // Perform operation on doubles
 
         double result;
-        switch (fn.substring(i, i + 1)) {
+        switch (expr.substring(i, i + 1)) {
             case "^":
-                result = Math.pow(num1, num2);
+                result = Math.pow(a, b);
                 break;
             case "*":
-                result = num1 * num2;
+                result = a * b;
                 break;
             case "/":
-                result = num1 / num2;
+                result = a / b;
                 break;
             case "+":
-                result = num1 + num2;
+                result = a + b;
                 break;
             case "-":
-                result = num1 - num2;
+                result = a - b;
                 break;
             default:
                 result = 0;
                 break;
         }
-        if (begIdx != 0 && fn.substring(begIdx - 1, begIdx).matches("\\d")) {
-            fn = fn.substring(0, begIdx) + "+" + result + fn.substring(endIdx + 1);
-        } else
-            fn = fn.substring(0, begIdx) + result + fn.substring(endIdx + 1);
 
-        return fn;
+        // Add "+" before evaluated expression if it would otherwise merge with a number before it
+        // (Occurs with negative numbers)
+
+        if (begIdx > 0 && expr.substring(begIdx - 1, begIdx).matches("\\d")) {
+            expr = expr.substring(0, begIdx) + "+" + result + expr.substring(endIdx + 1);
+        } else
+            expr = expr.substring(0, begIdx) + result + expr.substring(endIdx + 1);
+
+        return expr;
     }
 
     public String toString() {
         String out = "";
         for (int i = faceFeatures.length-1; i >= 0; i--) {
             for (int j = 0; j < faceFeatures[i].length; j++)
-                out += " " + faceFeatures[i][j] + "";
+                out += " " + faceFeatures[i][j];
             out += "\n";
         }
         return out;

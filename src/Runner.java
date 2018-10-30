@@ -12,9 +12,9 @@ public class Runner {
         //jackOLantern.graphFunction("F", "x = x^(1/2)");
         jackOLantern.graphFunction("▣", "x = 0.025 * (x - 13)^2 + 6");
         jackOLantern.graphFunction("▣", "x = -0.025 * (x - 13)^2 + 20");
-        jackOLantern.graphFunction("■", "y = (13^2 - ((x - 13)^2))^(1/2) + 13");
-        jackOLantern.graphFunction("■", "y = -1 * (13^2 - ((x - 13)^2))^(1/2) + 13");
-        jackOLantern.graphFunction("■", "y = -1 * (13^2 - ((x - 13)^2))^(1/2) + 20", new int[]{6, 20});
+        jackOLantern.graphFunction("■", "y = (13^2 - ((x - 13)^2))^.5 + 13");
+        jackOLantern.graphFunction("■", "y = -1 * (13^2 - ((x - 13)^2))^.5 + 13");
+        jackOLantern.graphFunction("■", "y = -1 * (13^2 - ((x - 13)^2))^.5 + 20", 6, 20);
 
         System.out.print(jackOLantern);
     }

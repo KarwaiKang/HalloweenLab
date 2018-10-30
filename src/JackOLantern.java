@@ -27,96 +27,107 @@ public class JackOLantern {
     }
 
     public void graphFunction(String str, String fn) {
+        graphFunction(str, fn, new int[]{0, faceFeatures[0].length});
+    }
+
+    public void graphFunction(String str, String fn, int[] domain) {
         // Remove whitespace
+
         String[] terms = fn.split(" ");
         fn = String.join("", terms);
 
-        // Determine the domain and remove the dependent variable and equal sign
-        int domain;
+        // Determine  values and remove dependent variable and equal sign
+
+        int values;
         if (fn.substring(0, 1).equals("y"))
-            domain = faceFeatures[0].length;
+            values = faceFeatures[0].length;
         else
-            domain = faceFeatures.length;
+            values = faceFeatures.length;
         fn = fn.substring(2);
 
-        for (int i = 0; i < domain; i++) {
+        for (int i = 0; i < values; i++) {
+            if (!(i >= domain[0] && i <= domain[1]))
+                continue;
+
             String instance = fn;
 
             // Substitute variables with i
+
             if (instance.substring(0, 1).matches("x"))
                 instance = "(" + i + ")" + instance.substring(1);
             if (instance.substring(instance.length() - 1).matches("x"))
                 instance = instance.substring(0, instance.length() - 1) + "(" + i + ")";
             instance = String.join("(" + i + ")", instance.split("x"));
 
-            // Evaluate the expression by first dealing with parenthesis
+            // Evaluate expression first with parenthesis, from innermost to outermost
 
-            //while (!instance.matches("-?\\d*\\.?\\d+") || !instance.equals("NaN")) {
-                while (instance.contains("(")) {
-                    int begIdx = instance.lastIndexOf("(");
-                    int endIdx = begIdx + instance.substring(begIdx).indexOf(")");
-                    String innerFn = instance.substring(begIdx + 1, endIdx);
-                    String evaluated = interpretExpression(innerFn);
-                    instance = instance.substring(0, begIdx) + evaluated + instance.substring(endIdx + 1);
+            while (instance.contains("(")) {
+                int begIdx = instance.lastIndexOf("(");
+                int endIdx = begIdx + instance.substring(begIdx).indexOf(")");
+                String innerFn = instance.substring(begIdx + 1, endIdx);
+                String evaluated = interpretExpression(innerFn);
+                instance = instance.substring(0, begIdx) + evaluated + instance.substring(endIdx + 1);
+                if (evaluated.contains("NaN"))
+                    break;
+            }
+            instance = interpretExpression(instance);
 
-                }
-                instance = interpretExpression(instance);
-            //}
+            // Skip NaN
 
-            // Converts the final String to a double.
+            if (instance.contains("NaN"))
+                continue;
+
+            // Convert final String to double
 
             int result = (int)Math.round(Double.parseDouble(instance));
-            System.out.println("//////////// " + i + ", " + result);
+
+            // Edit string array value
 
             try {
                 if (terms[0].equals("y"))
                     edit(str, result, i);
                 else
                     edit(str, i, result);
-            } catch (ArrayIndexOutOfBoundsException e) {
-            }
+            } catch (ArrayIndexOutOfBoundsException e) {}
         }
     }
 
     private String interpretExpression(String expr) {
-        System.out.println("| In: " + expr);
+        while (expr.contains("^"))
+            expr = doOperation(expr, expr.indexOf("^"));
 
-        //while (!(expr.matches("-?\\d*\\.?\\d+]") && expr.equals("NaN"))) {
-            while (expr.contains("^"))
-                expr = doOperation(expr, expr.indexOf("^"));
+        if (expr.contains("NaN"))
+            return "NaN";
 
-            while (expr.contains("*") || expr.contains("/")) {
-                int i;
-                if (!expr.contains("*")) {
-                    i = expr.indexOf("/");
-                } else if (!expr.contains("/")) {
-                    i = expr.indexOf("*");
-                } else
-                    i = Math.min(expr.indexOf("*"),expr.indexOf("/"));
-                expr = doOperation(expr, i);
-            }
+        while (expr.contains("*") || expr.contains("/")) {
+            int i;
+            if (!expr.contains("*")) {
+                i = expr.indexOf("/");
+            } else if (!expr.contains("/")) {
+                i = expr.indexOf("*");
+            } else
+                i = Math.min(expr.indexOf("*"),expr.indexOf("/"));
+            expr = doOperation(expr, i);
+        }
 
-            while (expr.contains("+") || expr.matches(".*\\d-.*")) {
-                int i;
-                if (!expr.contains("+")) {
-                    i = expr.indexOf("-");
-                } else if (!expr.contains("-")) {
+        while (expr.contains("+") || expr.matches(".*\\d-.*")) {
+            int i;
+            if (!expr.contains("+")) {
+                i = expr.indexOf("-");
+            } else if (!expr.contains("-")) {
+                i = expr.indexOf("+");
+            } else {
+                i = Math.min(expr.indexOf("+"), expr.indexOf("-"));
+                if (expr.indexOf("-") == 0 || !expr.substring(expr.indexOf("-") - 1, expr.indexOf("-")).matches("\\d")) {
                     i = expr.indexOf("+");
-                } else {
-                    i = Math.min(expr.indexOf("+"), expr.indexOf("-"));
-                    if (expr.indexOf("-") == 0 || !expr.substring(expr.indexOf("-") - 1, expr.indexOf("-")).matches("\\d")) {
-                        i = expr.indexOf("+");
-                    }
                 }
-                expr = doOperation(expr, i);
             }
+            expr = doOperation(expr, i);
+        }
 
-            if (expr.length() > 1 && expr.substring(0, 2).equals("--")) {
-                expr = expr.substring(2);
-            }
-
-            System.out.println("| " + expr + " ✔");
-        //}
+        if (expr.length() > 1 && expr.substring(0, 2).equals("--")) {
+            expr = expr.substring(2);
+        }
         return expr;
     }
 
@@ -126,32 +137,27 @@ public class JackOLantern {
             String nxtChar = fn.substring(begIdx - 1, begIdx);
             if (nxtChar.matches("[\\d.]"))
                 continue;
-            if (nxtChar.equals("-")) {
+            if (nxtChar.equals("-"))
                 begIdx--;
-                break;
-            }
+            break;
         }
         for (endIdx = i; endIdx != fn.length() - 1 && (fn.substring(endIdx + 1, endIdx + 2).matches("[\\d.]") ||
                 (fn.substring(endIdx + 1, endIdx + 2).equals("-") && endIdx == i)); endIdx++) {}
         String str1 = fn.substring(begIdx, i);
-        System.out.print(begIdx + ", " + i + ": ");
         double num1;
         try {
             num1 = Double.parseDouble(str1);
         } catch (NumberFormatException e) {
            num1 = 0;
         }
-        System.out.println(num1);
 
         String str2 = fn.substring(i + 1, endIdx + 1);
-        System.out.print((i + 1) + ", " + (endIdx + 1) + ": ");
         double num2;
         try {
             num2 = Double.parseDouble(str2);
         } catch (NumberFormatException e) {
             num2 = 0;
         }
-        System.out.println(num2);
 
         double result;
         switch (fn.substring(i, i + 1)) {
@@ -171,16 +177,14 @@ public class JackOLantern {
                 result = num1 - num2;
                 break;
             default:
-                System.out.println("WHAT!?");
                 result = 0;
                 break;
         }
         if (begIdx != 0 && fn.substring(begIdx - 1, begIdx).matches("\\d")) {
-            System.out.println("Yes");
             fn = fn.substring(0, begIdx) + "+" + result + fn.substring(endIdx + 1);
         } else
             fn = fn.substring(0, begIdx) + result + fn.substring(endIdx + 1);
-        System.out.println("| " + fn);
+
         return fn;
     }
 
@@ -188,7 +192,7 @@ public class JackOLantern {
         String out = "";
         for (int i = faceFeatures.length-1; i >= 0; i--) {
             for (int j = 0; j < faceFeatures[i].length; j++)
-                out += " " + faceFeatures[i][j] + " ";
+                out += " " + faceFeatures[i][j] + "";
             out += "\n";
         }
         return out;

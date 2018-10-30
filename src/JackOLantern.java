@@ -90,8 +90,6 @@ public class JackOLantern {
             while (expr.contains("^"))
                 expr = doOperation(expr, expr.indexOf("^"));
 
-            System.out.println("| ^: " + expr);
-
             while (expr.contains("*") || expr.contains("/")) {
                 int i;
                 if (!expr.contains("*")) {
@@ -102,8 +100,6 @@ public class JackOLantern {
                     i = Math.min(expr.indexOf("*"),expr.indexOf("/"));
                 expr = doOperation(expr, i);
             }
-
-            System.out.println("| */: " + expr);
 
             while (expr.contains("+") || expr.matches(".*\\d-.*")) {
                 int i;
@@ -124,34 +120,43 @@ public class JackOLantern {
                 expr = expr.substring(2);
             }
 
-            System.out.println("| +-: " + expr + " ✔");
+            System.out.println("| " + expr + " ✔");
         }
         return expr;
     }
 
     private String doOperation(String fn, int i) {
         int begIdx, endIdx;
-        for (begIdx = i; begIdx != 0 && (fn.substring(begIdx - 1, begIdx).matches("[\\d.]") ||
-                (begIdx > 1 && fn.substring(begIdx - 1, begIdx).equals("-") && fn.substring(begIdx - 2, begIdx - 1).equals("-"))); begIdx--) {}
+        for (begIdx = i; begIdx != 0; begIdx--) {
+            String nxtChar = fn.substring(begIdx - 1, begIdx);
+            if (nxtChar.matches("[\\d.]"))
+                continue;
+            if (nxtChar.equals("-")) {
+                begIdx--;
+                break;
+            }
+        }
         for (endIdx = i; endIdx != fn.length() - 1 && (fn.substring(endIdx + 1, endIdx + 2).matches("[\\d.]") ||
                 (fn.substring(endIdx + 1, endIdx + 2).equals("-") && endIdx == i)); endIdx++) {}
         String str1 = fn.substring(begIdx, i);
-        System.out.println("from " + begIdx + " to " + i);
+        System.out.print(begIdx + ", " + i + ": ");
         double num1;
         try {
             num1 = Double.parseDouble(str1);
         } catch (NumberFormatException e) {
            num1 = 0;
         }
+        System.out.println(num1);
 
         String str2 = fn.substring(i + 1, endIdx + 1);
-        System.out.println("from " + (i + 1) + " to " + (endIdx + 1));
+        System.out.print((i + 1) + ", " + (endIdx + 1) + ": ");
         double num2;
         try {
             num2 = Double.parseDouble(str2);
         } catch (NumberFormatException e) {
             num2 = 0;
         }
+        System.out.println(num2);
 
         double result;
         switch (fn.substring(i, i + 1)) {
@@ -175,7 +180,13 @@ public class JackOLantern {
                 result = 0;
                 break;
         }
-        return fn.substring(0, begIdx) + result + fn.substring(endIdx + 1);
+        if (begIdx != 0 && fn.substring(begIdx - 1, begIdx).matches("\\d")) {
+            System.out.println("Yes");
+            fn = fn.substring(0, begIdx) + "+" + result + fn.substring(endIdx + 1);
+        } else
+            fn = fn.substring(0, begIdx) + result + fn.substring(endIdx + 1);
+        System.out.println("| " + fn);
+        return fn;
     }
 
     public String toString() {

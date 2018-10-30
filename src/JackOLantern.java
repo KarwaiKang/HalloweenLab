@@ -27,17 +27,11 @@ public class JackOLantern {
     }
 
     public void graphFunction(String str, String fn) {
-        System.out.println("Input: " + fn);
-
         // Remove whitespace
-
         String[] terms = fn.split(" ");
         fn = String.join("", terms);
 
-        System.out.println("w/o spaces: " + fn);
-
-        // Determines the domain and removes the dependent variable and equal sign
-
+        // Determine the domain and remove the dependent variable and equal sign
         int domain;
         if (fn.substring(0, 1).equals("y"))
             domain = faceFeatures[0].length;
@@ -45,23 +39,19 @@ public class JackOLantern {
             domain = faceFeatures.length;
         fn = fn.substring(2);
 
-        System.out.println("Expression only: " + fn);
-
         for (int i = 0; i < domain; i++) {
             String instance = fn;
 
-            // Substitute variables with i and add * signs between number and parenthesis
+            // Substitute variables with i
             if (instance.substring(0, 1).matches("x"))
                 instance = "(" + i + ")" + instance.substring(1);
             if (instance.substring(instance.length() - 1).matches("x"))
                 instance = instance.substring(0, instance.length() - 1) + "(" + i + ")";
             instance = String.join("(" + i + ")", instance.split("x"));
 
-            System.out.println("Substituted: " + instance);
+            // Evaluate the expression by first dealing with parenthesis
 
-            // Evaluates the expression by first dealing with parenthesis.
-
-            while (!instance.matches("-?\\d*\\.?\\d+") || instance.equals("NaN")) {
+            //while (!instance.matches("-?\\d*\\.?\\d+") || !instance.equals("NaN")) {
                 while (instance.contains("(")) {
                     int begIdx = instance.lastIndexOf("(");
                     int endIdx = begIdx + instance.substring(begIdx).indexOf(")");
@@ -71,7 +61,7 @@ public class JackOLantern {
 
                 }
                 instance = interpretExpression(instance);
-            }
+            //}
 
             // Converts the final String to a double.
 
@@ -91,7 +81,7 @@ public class JackOLantern {
     private String interpretExpression(String expr) {
         System.out.println("| In: " + expr);
 
-        while (!expr.matches("-?\\d*\\.?\\d+|(NaN)]")) {
+        //while (!(expr.matches("-?\\d*\\.?\\d+]") && expr.equals("NaN"))) {
             while (expr.contains("^"))
                 expr = doOperation(expr, expr.indexOf("^"));
 
@@ -126,7 +116,7 @@ public class JackOLantern {
             }
 
             System.out.println("| " + expr + " ✔");
-        }
+        //}
         return expr;
     }
 
@@ -198,7 +188,7 @@ public class JackOLantern {
         String out = "";
         for (int i = faceFeatures.length-1; i >= 0; i--) {
             for (int j = 0; j < faceFeatures[i].length; j++)
-                out += faceFeatures[i][j];
+                out += " " + faceFeatures[i][j] + " ";
             out += "\n";
         }
         return out;
